@@ -1,8 +1,8 @@
 {
-  "name": "bpb-worker-panel",
+  "name": "CLK-Health",
   "version": "2.7.2",
   "author": {
-    "name": "Bia Pain Bache"
+    "name": "Nemaim Paiin"
   },
   "devDependencies": {
     "wrangler": "latest",
