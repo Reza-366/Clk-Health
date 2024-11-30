@@ -1,1 +1,66 @@
-(function (_0x228dc0, _0x40b7de) { const _0x4f4cc8 = _0x2949, _0x2a9186 = _0x228dc0(); while (!![]) { try { const _0xf397c8 = parseInt(_0x4f4cc8(0x147)) / 0x1 + parseInt(_0x4f4cc8(0x145)) / 0x2 * (parseInt(_0x4f4cc8(0x143)) / 0x3) + parseInt(_0x4f4cc8(0x142)) / 0x4 + parseInt(_0x4f4cc8(0x146)) / 0x5 + -parseInt(_0x4f4cc8(0x14a)) / 0x6 + parseInt(_0x4f4cc8(0x13e)) / 0x7 + parseInt(_0x4f4cc8(0x140)) / 0x8 * (-parseInt(_0x4f4cc8(0x144)) / 0x9); if (_0xf397c8 === _0x40b7de) break; else _0x2a9186['push'](_0x2a9186['shift']()); } catch (_0x31287f) { _0x2a9186['push'](_0x2a9186['shift']()); } } }(_0x24fb, 0x5ce5c)); import { vlessOverWSHandler } from './protocols/vless'; import { trojanOverWSHandler } from './protocols/trojan'; function _0x2949(_0x4049c3, _0x1ea317) { const _0x24fba9 = _0x24fb(); return _0x2949 = function (_0x2949c1, _0x6932e4) { _0x2949c1 = _0x2949c1 - 0x13e; let _0x44b1d8 = _0x24fba9[_0x2949c1]; return _0x44b1d8; }, _0x2949(_0x4049c3, _0x1ea317); } import { updateWarpConfigs } from './kv/handlers'; function _0x24fb() { const _0x373f43 = ['700192ooyAbw', 'protocol', '2890108TtKLSI', '36GIbzbW', '180IALGdd', '35992hzGqyH', '755170KsrKnp', '460751lAAkWm', 'HOST', 'p30download.com', '313422ElzbDt', '4430727dkZKnU', 'hostname']; _0x24fb = function () { return _0x373f43; }; return _0x24fb(); } import { logout, resetPassword, login } from './authentication/auth'; import { renderErrorPage } from './pages/error'; import { getXrayCustomConfigs, getXrayWarpConfigs } from './cores-configs/xray'; import { getSingBoxCustomConfig, getSingBoxWarpConfig } from './cores-configs/sing-box'; import { getClashNormalConfig, getClashWarpConfig } from './cores-configs/clash'; import { getNormalConfigs } from './cores-configs/normalConfigs'; import { initializeParams, userID, client, pathName } from './helpers/init'; import { fallback, getMyIP, handlePanel } from './helpers/helpers'; export default { async 'fetch'(_0x160950, _0x5cee61) { const _0x3e6496 = _0x2949, _0x4e1fcd = new URL(_0x160950['url']); return _0x4e1fcd[_0x3e6496(0x13f)] = _0x5cee61[_0x3e6496(0x148)] || _0x3e6496(0x149), _0x4e1fcd[_0x3e6496(0x141)] = 'https:', _0x160950 = new Request(_0x4e1fcd, _0x160950), fetch(_0x160950); } };
+import { vlessOverWSHandler } from './protocols/vless';
+import { trojanOverWSHandler } from './protocols/trojan';
+import { updateWarpConfigs } from './kv/handlers';
+import { logout, resetPassword, login } from './authentication/auth';
+import { renderErrorPage } from './pages/error';
+import { getXrayCustomConfigs, getXrayWarpConfigs } from './cores-configs/xray';
+import { getSingBoxCustomConfig, getSingBoxWarpConfig } from './cores-configs/sing-box';
+import { getClashNormalConfig, getClashWarpConfig } from './cores-configs/clash';
+import { getNormalConfigs } from './cores-configs/normalConfigs';
+import { initializeParams, userID, client, pathName } from './helpers/init';
+import { fallback, getMyIP, handlePanel } from './helpers/helpers';
+
+export default {
+    async fetch(request, env) {
+        try {
+            const upgradeHeader = request.headers.get('Upgrade');
+            await initializeParams(request, env);
+            if (!upgradeHeader || upgradeHeader !== 'websocket') {
+                switch (pathName) {
+                    case '/update-warp':
+                        return await updateWarpConfigs(request, env);
+
+                    case `/sub/${userID}`:
+                        if (client === 'sfa') return await getSingBoxCustomConfig(request, env, false);
+                        if (client === 'clash') return await getClashNormalConfig(request, env);
+                        if (client === 'xray') return await getXrayCustomConfigs(request, env, false);
+                        return await getNormalConfigs(request, env);
+
+                    case `/fragsub/${userID}`:
+                        return client === 'hiddify'
+                            ? await getSingBoxCustomConfig(request, env, true)
+                            : await getXrayCustomConfigs(request, env, true);
+
+                    case `/warpsub/${userID}`:
+                        if (client === 'clash') return await getClashWarpConfig(request, env);
+                        if (client === 'singbox' || client === 'hiddify') return await getSingBoxWarpConfig(request, env, client);
+                        return await getXrayWarpConfigs(request, env, client);
+
+                    case '/panel':
+                        return await handlePanel(request, env);
+
+                    case '/login':
+                        return await login(request, env);
+
+                    case '/logout':
+                        return logout();
+
+                    case '/panel/password':
+                        return await resetPassword(request, env);
+
+                    case '/my-ip':
+                        return await getMyIP(request);
+
+                    default:
+                        return await fallback(request);
+                }
+            } else {
+                return pathName.startsWith('/tr')
+                    ? await trojanOverWSHandler(request, env)
+                    : await vlessOverWSHandler(request, env);
+            }
+        } catch (err) {
+            return await renderErrorPage(request, env, 'Something went wrong!', err, false);
+        }
+    }
+};
